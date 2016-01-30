@@ -21,7 +21,8 @@ public class ImageManager {
 
 	/**
 	 * findGrid
-	 * Cherche un carré dans src, la taille du carré est approximativement de size pixels.
+	 * Search a square in src image.
+	 * The square area in approximately size * size.
 	 * @param Mat src
 	 * @param double size
 	 * @return Point[]
@@ -29,66 +30,23 @@ public class ImageManager {
 	public static Point[] findGrid(Mat src, double size) {
 		long begin = System.currentTimeMillis();
 		
-		//Mat mat = src.clone();
-	    //Mat lines = new Mat();
-	    //double fastWidth = 300.0;
-	    //double fastHeight = 300.0;
-	    //double ratioWidth = src.width() / fastWidth;
-	    //double ratioHeight = src.height() / fastHeight;
-	    //double minArea = ((size/ratioWidth) * (size/ratioHeight)) * 0.7;
-	    //double maxArea = ((size/ratioWidth) * (size/ratioHeight)) * 1.1;
-		double minArea = (size * size) * 0.7;
-	    double maxArea = (size * size) * 1.1;
+		double minArea = (size * 0.7) * (size * 0.7);
+	    double maxArea = (size * 1.0) * (size * 1.0);
 	    Point[] squarePoints = null;
-	    
-	    //ImageManager.resize(mat, mat, fastWidth, fastHeight);
-		//Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGB2GRAY);
-		//Imgproc.GaussianBlur(mat, mat, new Size(7, 7), 2.0, 2.0);
-		//Imgproc.Canny(mat, mat, 66.0, 133.0);
-	    //ImageManager.fastThreshold(mat, mat);
 		
-        List<MatOfPoint2f> squares = ImageManager.getSquares(src, 10000, maxArea);
-        //MatOfPoint2f pointsList = new MatOfPoint2f();
-        //MatOfPoint2f approx = new MatOfPoint2f();
+        List<MatOfPoint2f> squares = ImageManager.getSquares(src, minArea, maxArea);
         
-        for(int i=0; i<squares.size(); i++) {
-            double[] orderedPoints = getOrderedPoints(squares.get(i));
+        // return the first square that match
+        // TODO : return the closest square for the given area (size * size)
+        if(squares.size() > 0) {
+            double[] orderedPoints = getOrderedPoints(squares.get(0));
             
             squarePoints = new Point[4];
             squarePoints[0] = new Point(orderedPoints[0],orderedPoints[1]);
             squarePoints[1] = new Point(orderedPoints[2],orderedPoints[3]);
             squarePoints[2] = new Point(orderedPoints[4],orderedPoints[5]);
             squarePoints[3] = new Point(orderedPoints[6],orderedPoints[7]);
-            
-            /*squarePoints[0] = new Point(orderedPoints[0]*ratioWidth,orderedPoints[1]*ratioHeight);
-            squarePoints[1] = new Point(orderedPoints[2]*ratioWidth,orderedPoints[3]*ratioHeight);
-            squarePoints[2] = new Point(orderedPoints[4]*ratioWidth,orderedPoints[5]*ratioHeight);
-            squarePoints[3] = new Point(orderedPoints[6]*ratioWidth,orderedPoints[7]*ratioHeight);*/
-            
-            //Point[] approxArray = squares.get(i).toArray();
-            //src.put(0,0,orderedPoints);
-            /*ImageManager.line(src, approxArray[0], approxArray[1], ratioWidth, ratioHeight, new Scalar(255,0,0,255));
-            ImageManager.line(src, approxArray[1], approxArray[2], ratioWidth, ratioHeight, new Scalar(255,0,0,255));
-            ImageManager.line(src, approxArray[2], approxArray[3], ratioWidth, ratioHeight, new Scalar(255,0,0,255));
-            ImageManager.line(src, approxArray[3], approxArray[0], ratioWidth, ratioHeight, new Scalar(255,0,0,255));*/
         }
-		
-		
-	    /*Imgproc.HoughLinesP(mat, lines, 1, Math.PI/180, 50, 0, 10);
-	    for (int x = 0; x < lines.cols(); x++) {
-	          double[] vec = lines.get(0, x);
-	          double x1 = vec[0]*ratioWidth,
-	                 y1 = vec[1]*ratioHeight,
-	                 x2 = vec[2]*ratioWidth,
-	                 y2 = vec[3]*ratioHeight;
-	          Point start = new Point(x1, y1);
-	          Point end = new Point(x2, y2);
-	          Log.i("ImageManager", start.toString());
-
-	          Core.line(dst, start, end, new Scalar(255,0,0), 3);
-	    }*/
-	    //ImageManager.resize(mat, src, src.width(), src.height());
-		//Imgproc.adaptiveThreshold(mat, dst, maxValue, method, type, blockSize, c);
 		
 		long end = System.currentTimeMillis();
 		Log.i("ImageManager", "findGrid : " + (end-begin));
@@ -122,7 +80,8 @@ public class ImageManager {
 	}
 	
 	public static List<MatOfPoint2f> getSquares(Mat src, double minArea, double maxArea) {
-		long begin = System.currentTimeMillis();//Log.i("ImageManager", "min : " + minArea + " / max : " + maxArea);
+		long begin = System.currentTimeMillis();
+		Log.i("ImageManager", "min : " + minArea + " / max : " + maxArea);
 		
         List<MatOfPoint> shapes = new ArrayList<MatOfPoint>();
         List<MatOfPoint2f> squares = new ArrayList<MatOfPoint2f>();
@@ -130,7 +89,8 @@ public class ImageManager {
         shapes.clear();
         Imgproc.findContours(src.clone(), shapes, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
         for(int i=0; i<shapes.size(); i++) {
-        	double area = Imgproc.contourArea(shapes.get(i));//Log.i("ImageManager", "square area : " + area);
+        	double area = Imgproc.contourArea(shapes.get(i));
+        	Log.i("ImageManager", "square area : " + area);
         	// ignore small or large areas
         	if(area < minArea || area > maxArea) {
         		continue;
@@ -140,7 +100,8 @@ public class ImageManager {
             shapes.get(i).convertTo(pointsList, CvType.CV_32FC2);
     		Imgproc.approxPolyDP(pointsList, approxPoly, Imgproc.arcLength(pointsList, true)*0.02, true);
         	if(ImageManager.isSquare(approxPoly)) {
-                squares.add(approxPoly);//Log.i("ImageManager", "square area : " + area);
+                squares.add(approxPoly);
+                Log.i("ImageManager", "square area : " + area);
         	}
         }
         
@@ -151,10 +112,10 @@ public class ImageManager {
 	}
 	
     private static boolean isSquare(MatOfPoint2f approxPoly) {
-        //double segLen;
+        double segLen;
 
 		if(approxPoly.toArray().length != 4) return false;
-		/*double orderedPoints[] = ImageManager.getOrderedPoints(approx);
+		double orderedPoints[] = ImageManager.getOrderedPoints(approxPoly);
 		segLen = (Math.abs(orderedPoints[0]-orderedPoints[2])+
 				Math.abs(orderedPoints[3]-orderedPoints[5])+
 				Math.abs(orderedPoints[4]-orderedPoints[6])+
@@ -162,11 +123,12 @@ public class ImageManager {
 		if(Math.abs(orderedPoints[1]-orderedPoints[3]) > segLen/4.0) return false;
 		if(Math.abs(orderedPoints[5]-orderedPoints[7]) > segLen/4.0) return false;
 		if(Math.abs(orderedPoints[0]-orderedPoints[6]) > segLen/4.0) return false;
-		if(Math.abs(orderedPoints[2]-orderedPoints[4]) > segLen/4.0) return false;*/
+		if(Math.abs(orderedPoints[2]-orderedPoints[4]) > segLen/4.0) return false;
 		
     	return true;
     }
     
+    // TODO : clean this fonction
     private static double[] getOrderedPoints(MatOfPoint2f approx) {
     	double points[] = new double[8];
     	

@@ -46,10 +46,12 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 	private int 			_itampon;
 	private int 			_itamponMax;
 	private int 			_grille[][];
-	private int 			_frameNum = 0;
 	private long 			_lastSolve = System.currentTimeMillis();
 	private Solver 			_solver;
-	private Mat 			_savedMat;
+	private Point[] 		_lastSquareFound = null;
+	private long			_lastSquareFoundFrameNumber = 0;
+	private long			_previousFrameNumber = 0;
+	
     
     private CameraBridgeViewBase 	_mOpenCvCameraView;
     private boolean              	_mIsJavaCamera = true;
@@ -77,6 +79,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private final Scalar 			COLOR_SQUARE_FOUND = new Scalar(255,0,0,150);
 	private final double 			MAT_FAST_WIDTH = 350.0;
 	private final double 			MAT_FAST_HEIGHT = 350.0;
+	private final int 				ANALYSIS_FREQUENCY = 2;
     
 	static {
 	    if(!OpenCVLoader.initDebug()) {
@@ -186,6 +189,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
          * traitement de l'image
          */
     	//Log.i(TAG, "width " + mOpenCvCameraView.getWidth());
+    	long currentFrameNumber = _previousFrameNumber + 1;
     	Mat rgba = inputFrame.rgba();
     	double frameWidth = rgba.width();
     	double frameHeight = rgba.height();
@@ -202,18 +206,19 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	//Mat rgbaOCR = rgbaGrid.clone();
 	    ImageManager.fastThreshold(rgbaGrid, rgbaGrid);
     	
-    	Point[] gridPoints = ImageManager.findGrid(rgbaGrid, patternSize);
-    	if(gridPoints != null) {
+	    _lastSquareFound = ImageManager.findGrid(rgbaGrid, patternSize);
+    	if(_lastSquareFound != null) {
     		Log.i("ETAT", "GRILLE TROUVE");
+    		_lastSquareFoundFrameNumber = currentFrameNumber;
     		
     		// draw square found
     		try {
-				ImageManager.drawLines(rgba, gridPoints, ratioWidth, ratioHeight, COLOR_SQUARE_FOUND);
+				ImageManager.drawLines(rgba, _lastSquareFound, ratioWidth, ratioHeight, COLOR_SQUARE_FOUND);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
     		
-            /*Mat[][] matFigures = ImageManager.findFigures(rgbaGrid, gridPoints);
+            /*Mat[][] matFigures = ImageManager.findFigures(rgbaGrid, _previousSquareFound);
             String out = "";
             for(int i=0; i<9; i++) {
             	for(int j=0; j<9; j++) {
@@ -245,6 +250,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	
     	// draw square pattern
     	ImageManager.drawSquare(rgba, new Point((frameWidth/2.0)-(patternSizeRgba/2),(frameHeight/2.0)-(patternSizeRgba/2)), patternSizeRgba, COLOR_SQUARE_PATTERN);
+    	
+    	_previousFrameNumber = currentFrameNumber;
 
         return rgba;
     }
