@@ -31,7 +31,7 @@ public class ImageManager {
 		long begin = System.currentTimeMillis();
 		
 		double minArea = (size * 0.7) * (size * 0.7);
-	    double maxArea = (size * 1.0) * (size * 1.0);
+	    double maxArea = (size * 1.1) * (size * 1.1);
 	    Point[] squarePoints = null;
 		
         List<MatOfPoint2f> squares = ImageManager.getSquares(src, minArea, maxArea);
@@ -89,19 +89,19 @@ public class ImageManager {
         shapes.clear();
         Imgproc.findContours(src.clone(), shapes, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
         for(int i=0; i<shapes.size(); i++) {
-        	double area = Imgproc.contourArea(shapes.get(i));
-        	Log.i("ImageManager", "square area : " + area);
-        	// ignore small or large areas
-        	if(area < minArea || area > maxArea) {
-        		continue;
-        	}
             MatOfPoint2f pointsList = new MatOfPoint2f();
             MatOfPoint2f approxPoly = new MatOfPoint2f();
             shapes.get(i).convertTo(pointsList, CvType.CV_32FC2);
     		Imgproc.approxPolyDP(pointsList, approxPoly, Imgproc.arcLength(pointsList, true)*0.02, true);
         	if(ImageManager.isSquare(approxPoly)) {
+            	double area = ImageManager.squareArea(approxPoly);
+            	Log.i("ImageManager", "square area : " + area);
+            	// ignore small or large areas
+            	if(area < minArea || area > maxArea) {
+            		continue;
+            	}
                 squares.add(approxPoly);
-                Log.i("ImageManager", "square area : " + area);
+                Log.i("ImageManager", "square OK : " + area);
         	}
         }
         
@@ -112,10 +112,10 @@ public class ImageManager {
 	}
 	
     private static boolean isSquare(MatOfPoint2f approxPoly) {
-        double segLen;
+        //double segLen;
 
 		if(approxPoly.toArray().length != 4) return false;
-		double orderedPoints[] = ImageManager.getOrderedPoints(approxPoly);
+		/*double orderedPoints[] = ImageManager.getOrderedPoints(approxPoly);
 		segLen = (Math.abs(orderedPoints[0]-orderedPoints[2])+
 				Math.abs(orderedPoints[3]-orderedPoints[5])+
 				Math.abs(orderedPoints[4]-orderedPoints[6])+
@@ -123,9 +123,23 @@ public class ImageManager {
 		if(Math.abs(orderedPoints[1]-orderedPoints[3]) > segLen/4.0) return false;
 		if(Math.abs(orderedPoints[5]-orderedPoints[7]) > segLen/4.0) return false;
 		if(Math.abs(orderedPoints[0]-orderedPoints[6]) > segLen/4.0) return false;
-		if(Math.abs(orderedPoints[2]-orderedPoints[4]) > segLen/4.0) return false;
+		if(Math.abs(orderedPoints[2]-orderedPoints[4]) > segLen/4.0) return false;*/
 		
     	return true;
+    }
+    
+    private static double squareArea(MatOfPoint2f approxPoly) {
+        double segLen;
+        double area;
+
+		double orderedPoints[] = ImageManager.getOrderedPoints(approxPoly);
+		segLen = (Math.abs(orderedPoints[0]-orderedPoints[2])+
+				Math.abs(orderedPoints[3]-orderedPoints[5])+
+				Math.abs(orderedPoints[4]-orderedPoints[6])+
+				Math.abs(orderedPoints[1]-orderedPoints[7]))/4.0;
+		area = segLen * segLen;
+		
+    	return area;
     }
     
     // TODO : clean this fonction
