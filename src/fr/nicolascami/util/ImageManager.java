@@ -232,6 +232,7 @@ public class ImageManager {
         		mat.width(),mat.height(),
         		0,mat.height());
 
+        // warp grid into a perfect square
         Mat perspectiveTransform = Imgproc.getPerspectiveTransform(srcMat, dstMat);
         Imgproc.warpPerspective(src, mat, perspectiveTransform, mat.size());
         Mat matClean = mat.clone();
@@ -270,7 +271,7 @@ public class ImageManager {
         }
         
         long end = System.currentTimeMillis();
-		Log.i("ImageManager", "warpPerspective : " + (end-begin));
+		Log.i("ImageManager", "findFigures : " + (end-begin));
 		
 		return figures;
 	}

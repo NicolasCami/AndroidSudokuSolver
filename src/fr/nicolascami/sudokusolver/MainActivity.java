@@ -18,6 +18,7 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import fr.nicolascami.task.FindFiguresTask;
 import fr.nicolascami.task.FindSquareTask;
 import fr.nicolascami.util.ImageManager;
 import fr.nicolascami.util.OCR;
@@ -57,6 +58,10 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 	private boolean			_processingFindSquare = false;
 	private boolean			_processingFindFigures = false;
 	private long			_currentFrameNumber = 0;
+	private Mat				_lastImageForProcessing;
+	private double			_patternSizeRgba = 0.0;
+	private double 			_frameWidth = 0.0;
+	private double 			_frameHeight = 0.0;
 	
     
     private CameraBridgeViewBase 	_mOpenCvCameraView;
@@ -192,11 +197,17 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	//Log.i(TAG, "width " + mOpenCvCameraView.getWidth());
     	_currentFrameNumber = _previousFrameNumber + 1;
     	Mat rgba = inputFrame.rgba();
-    	double frameWidth = rgba.width();
-    	double frameHeight = rgba.height();
+    	if(_frameWidth < 1.0) {
+    		_frameWidth = rgba.width();
+    	}
+    	if(_frameHeight < 1.0) {
+    		_frameHeight = rgba.height();
+    	}
+    	if(_patternSizeRgba < 1.0) {
+    		_patternSizeRgba = _frameHeight * 0.9;
+    	}
     	double ratioWidth = rgba.width() / MAT_FAST_WIDTH;
 	    double ratioHeight = rgba.height() / MAT_FAST_HEIGHT;
-    	double patternSizeRgba = frameHeight * 0.9;
     	double patternSize = MAT_FAST_HEIGHT * 0.9;
     	
     	// resize original image smaller, to perform transformations faster
@@ -227,7 +238,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	}
     	
     	// draw square pattern
-    	ImageManager.drawSquare(rgba, new Point((frameWidth/2.0)-(patternSizeRgba/2),(frameHeight/2.0)-(patternSizeRgba/2)), patternSizeRgba, COLOR_SQUARE_PATTERN);
+    	ImageManager.drawSquare(rgba, new Point((_frameWidth/2.0)-(_patternSizeRgba/2),(_frameHeight/2.0)-(_patternSizeRgba/2)), _patternSizeRgba, COLOR_SQUARE_PATTERN);
     	
     	_previousFrameNumber = _currentFrameNumber;
 
@@ -285,6 +296,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
     private void findGridStart(Mat image, double squareSize) {
     	new FindSquareTask(this).execute((Object) image, (Object) squareSize);
+    	_lastImageForProcessing = image;
 		_processingFindSquare = true;
 	}
     
@@ -292,6 +304,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 		Log.i(TAG, "Grid search result. It tooks " + (_currentFrameNumber - _lastSquareFoundFrameNumber) + " frames.");
 		if(result != null) {
 			Log.i(TAG, "Grid found !");
+			if(!_processingFindFigures) {
+				findFiguresStart(_lastImageForProcessing, result);
+			}
 		}
 		else {
 			Log.i(TAG, "Grid not found.");
@@ -300,34 +315,31 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 		_lastSquareFoundFrameNumber = _currentFrameNumber;
 		_processingFindSquare = false;
 	}
+	
+	private void findFiguresStart(Mat image, Point[] square) {
+    	new FindFiguresTask(this).execute((Object) image, (Object) square);
+    	_processingFindFigures = true;
+	}
 
 	public void findFiguresResult(Mat[][] result) {
 		Log.i(TAG, "Figures search result. It tooks " + (_currentFrameNumber - _lastFiguresFoundFrameNumber) + " frames.");
-    	/*if(_lastSquareFound != null) {
-		// draw square found
-		try {
-			ImageManager.drawLines(rgba, _lastSquareFound, ratioWidth, ratioHeight, COLOR_SQUARE_FOUND);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-        Mat[][] matFigures = ImageManager.findFigures(rgbaGrid, _lastSquareFound);
+
         String out = "";
         for(int i=0; i<9; i++) {
         	for(int j=0; j<9; j++) {
-        		if(matFigures[j][i] != null) {
-        			Point coordinates = new Point((frameWidth/2.0)-(patternSizeRgba/2)+(i*(patternSizeRgba/9))+10,
-        					(frameHeight/2.0)-(patternSizeRgba/2)+(j*(patternSizeRgba/9))+35);
+        		if(result[j][i] != null) {
+//        			Point coordinates = new Point((_frameWidth/2.0)-(_patternSizeRgba/2)+(i*(_patternSizeRgba/9))+10,
+//        					(_frameHeight/2.0)-(_patternSizeRgba/2)+(j*(_patternSizeRgba/9))+35);
 //        			ImageManager.pasteMat(matFigures[j][i], rgba, 
 //        					new Point((frameWidth/2.0)-(patternSize/2)+(i*(patternSize/9)),
 //        					(frameHeight/2.0)-(patternSize/2)+(j*(patternSize/9))));
 
-        			int currentFigure = Math.round(_ocr.findByMat(matFigures[j][i]));
+        			int currentFigure = Math.round(_ocr.findByMat(result[j][i]));
         			out += currentFigure + " ";
         			
-        			if(currentFigure != 0) {
+        			/*if(currentFigure != 0) {
         				Core.putText(rgba, Integer.toString(currentFigure), coordinates, Core.FONT_HERSHEY_PLAIN, 3, new Scalar(0,0,255,255), 3);
-        			}
+        			}*/
         		}
         		else
         			out += "0 ";
@@ -335,7 +347,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         	out += "\n";
         }
         Log.i("GRILLE", out);
-	}*/
+        
 		_processingFindFigures = false;
 	}
 }
