@@ -218,8 +218,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	//Mat rgbaOCR = rgbaGrid.clone();
 	    ImageManager.fastThreshold(rgbaGrid, rgbaGrid);
 	    
-	    Point[] square = ImageManager.findGrid(rgbaGrid, patternSize);
-	    
 	    if(_processingFindSquare) {
 	    	Log.i(TAG, "Processing finding square...");
 	    }
@@ -239,6 +237,17 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	
     	// draw square pattern
     	ImageManager.drawSquare(rgba, new Point((_frameWidth/2.0)-(_patternSizeRgba/2),(_frameHeight/2.0)-(_patternSizeRgba/2)), _patternSizeRgba, COLOR_SQUARE_PATTERN);
+    	
+    	// draw grid
+        for(int i=0; i<9; i++) {
+        	for(int j=0; j<9; j++) {
+        		if(_grille[i][j] != 0) {
+        			Point coordinates = new Point((_frameWidth/2.0)-(_patternSizeRgba/2)+(i*(_patternSizeRgba/9))+10,
+					(_frameHeight/2.0)-(_patternSizeRgba/2)+(j*(_patternSizeRgba/9))+35);
+        			Core.putText(rgba, Integer.toString(_grille[i][j]), coordinates, Core.FONT_HERSHEY_PLAIN, 3, new Scalar(0,0,255,255), 3);
+        		}
+            }
+        }
     	
     	_previousFrameNumber = _currentFrameNumber;
 
@@ -324,6 +333,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 	public void findFiguresResult(Mat[][] result) {
 		Log.i(TAG, "Figures search result. It tooks " + (_currentFrameNumber - _lastFiguresFoundFrameNumber) + " frames.");
 
+		int[][] grid = new int[9][9];
         String out = "";
         for(int i=0; i<9; i++) {
         	for(int j=0; j<9; j++) {
@@ -336,6 +346,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
         			int currentFigure = Math.round(_ocr.findByMat(result[j][i]));
         			out += currentFigure + " ";
+        			grid[i][j] = currentFigure;
         			
         			/*if(currentFigure != 0) {
         				Core.putText(rgba, Integer.toString(currentFigure), coordinates, Core.FONT_HERSHEY_PLAIN, 3, new Scalar(0,0,255,255), 3);
@@ -347,6 +358,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         	out += "\n";
         }
         Log.i("GRILLE", out);
+        remplirTampon(grid);
+        changerGrille();
         
 		_processingFindFigures = false;
 	}
