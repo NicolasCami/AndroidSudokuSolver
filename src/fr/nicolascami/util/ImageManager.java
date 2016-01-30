@@ -104,8 +104,21 @@ public class ImageManager {
 		Imgproc.threshold(src, dst, -1, 255, Imgproc.THRESH_BINARY_INV + Imgproc.THRESH_OTSU);
 	}
 	
-	public static void line(Mat dst, Point p1, Point p2, double ratioWidth, double ratioHeight, Scalar color) {
+	public static void drawLine(Mat dst, Point p1, Point p2, double ratioWidth, double ratioHeight, Scalar color) {
 		Core.line(dst, new Point(p1.x*ratioWidth,p1.y*ratioHeight), new Point(p2.x*ratioWidth,p2.y*ratioHeight), color, 2);
+	}
+	
+	public static void drawLines(Mat dst, Point[] points, double ratioWidth, double ratioHeight, Scalar color) throws Exception {
+		if(points.length < 2) {
+			throw new Exception("Not enought points to draw lines : got " + points.length + ", need at least 2.");
+		}
+		
+		for(int i=0; i<points.length; i++) {
+			Point p1 = points[i];
+			Point p2 = points[(i+1)%points.length];
+			
+			ImageManager.drawLine(dst, new Point(p1.x*ratioWidth,p1.y*ratioHeight), new Point(p2.x*ratioWidth,p2.y*ratioHeight), 1, 1, color);
+		}
 	}
 	
 	public static List<MatOfPoint2f> getSquares(Mat src, double minArea, double maxArea) {
@@ -206,10 +219,10 @@ public class ImageManager {
     }
 
 	public static void drawSquare(Mat dst, Point point, double size, Scalar color) {
-        ImageManager.line(dst, point, new Point(point.x+size,point.y), 1, 1, color);
-        ImageManager.line(dst, point, new Point(point.x,point.y+size), 1, 1, color);
-        ImageManager.line(dst, new Point(point.x+size,point.y+size), new Point(point.x+size,point.y), 1, 1, color);
-        ImageManager.line(dst, new Point(point.x+size,point.y+size), new Point(point.x,point.y+size), 1, 1, color);
+        ImageManager.drawLine(dst, point, new Point(point.x+size,point.y), 1, 1, color);
+        ImageManager.drawLine(dst, point, new Point(point.x,point.y+size), 1, 1, color);
+        ImageManager.drawLine(dst, new Point(point.x+size,point.y+size), new Point(point.x+size,point.y), 1, 1, color);
+        ImageManager.drawLine(dst, new Point(point.x+size,point.y+size), new Point(point.x,point.y+size), 1, 1, color);
 	}
 	
 	public static void pasteMat(Mat src, Mat dst, Point p) {

@@ -35,43 +35,33 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity implements CvCameraViewListener2 {
 	
-	/*
-	 * 
-	 * 
-	 * ATTRIBUTS
-	 * 
-	 * 
-	 */
-	
 	//private double frameWidth = VideoCapture.get(Highgui.CV_CAP_PROP_FRAME_WIDTH);
 	//private int t = 0;
-	private List<Integer> imagesTraining;
-	OCR ocr;
-	double fastWidth = 350.0;
-    double fastHeight = 350.0;
-	Button button;
-	boolean analyser = false;
-	int tampon[][][];
-	int tamponOccur[];
-	int itampon;
-	int itamponMax;
-	int grille[][];
-	int frameNum = 0;
-	long lastSolve = System.currentTimeMillis();
-	Solver solver;
-	Mat savedMat;
-    private static final String TAG = "OCVSample::Activity";
-    private CameraBridgeViewBase mOpenCvCameraView;
-    private boolean              mIsJavaCamera = true;
-    private Mat mIntermediateMat;
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+	private List<Integer> 	_imagesTraining;
+	private OCR 			_ocr;
+	private Button 			button;
+	private boolean 		analyser = false;
+	private int 			_tampon[][][];
+	private int 			_tamponOccur[];
+	private int 			_itampon;
+	private int 			_itamponMax;
+	private int 			_grille[][];
+	private int 			_frameNum = 0;
+	private long 			_lastSolve = System.currentTimeMillis();
+	private Solver 			_solver;
+	private Mat 			_savedMat;
+    
+    private CameraBridgeViewBase 	_mOpenCvCameraView;
+    private boolean              	_mIsJavaCamera = true;
+    private Mat 					_mIntermediateMat;
+    private BaseLoaderCallback 		_mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS:
                 {
                     Log.i(TAG, "OpenCV loaded successfully");
-                    mOpenCvCameraView.enableView();
+                    _mOpenCvCameraView.enableView();
                 } break;
                 default:
                 {
@@ -81,6 +71,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         }
     };
     
+    // contstants
+    private static final String 	TAG = "OCVSample::Activity";
+    private final Scalar 			COLOR_SQUARE_PATTERN = new Scalar(127,127,127,100);
+    private final Scalar 			COLOR_SQUARE_FOUND = new Scalar(255,0,0,150);
+	private final double 			MAT_FAST_WIDTH = 350.0;
+	private final double 			MAT_FAST_HEIGHT = 350.0;
+    
 	static {
 	    if(!OpenCVLoader.initDebug()) {
 	        Log.d("ERROR", "Unable to load OpenCV");
@@ -88,19 +85,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 	        Log.d("SUCCESS", "OpenCV loaded");
 	    }
 	}
-
-    /*
-     * 
-     * 
-     * METHODES
-     * 
-     * 
-     */
-
-    public MainActivity() {
-        Log.i(TAG, "Instantiated new " + this.getClass());
-    }
-
+	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -109,31 +94,31 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         super.onCreate(savedInstanceState); 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
-        ocr = new OCR(getApplicationContext());
+        _ocr = new OCR(getApplicationContext());
         //Log.i(TAG, ocr.findByRessource(R.drawable.training2_2).toString());
         //Log.i(TAG, ocr.findByRessource(R.drawable.training5_0).toString());
         //Log.i(TAG, ocr.findByRessource(R.drawable.training6_1).toString());
 
-        tampon = new int[8][9][9];
-        tamponOccur = new int[8];
-        itampon = 0;
-        itamponMax = 0;
+        _tampon = new int[8][9][9];
+        _tamponOccur = new int[8];
+        _itampon = 0;
+        _itamponMax = 0;
         for(int k=0; k<8; k++) {
 	    	for(int i=0; i<9; i++) {
 	    		for(int j=0; j<9; j++) {
-	    			tampon[k][j][i] = 0;
+	    			_tampon[k][j][i] = 0;
 	    		}
 	    	}
-	    	tamponOccur[k] = 0;
+	    	_tamponOccur[k] = 0;
         }
-        grille = new int[9][9];
+        _grille = new int[9][9];
     	for(int i=0; i<9; i++) {
     		for(int j=0; j<9; j++) {
-    			grille[j][i] = 0;
+    			_grille[j][i] = 0;
     		}
     	}
-    	solver = new Solver(3);
-    	solver.solve(grille,true);
+    	_solver = new Solver(3);
+    	_solver.solve(_grille,true);
         setContentView(R.layout.tutorial1_surface_view);
 		button = (Button) findViewById(R.id.button1);
 		button.setOnClickListener(new OnClickListener() {
@@ -141,7 +126,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 			public void onClick(View arg0) {
 				if(analyser==false) {
 					analyser = true;
-					lastSolve = System.currentTimeMillis();
+					_lastSolve = System.currentTimeMillis();
 				}
 				else analyser = false;
 				Toast.makeText(getApplicationContext(), 
@@ -149,14 +134,14 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 			}
 		});
 
-        if (mIsJavaCamera)
-            mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.tutorial1_activity_java_surface_view);
+        if (_mIsJavaCamera)
+            _mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.tutorial1_activity_java_surface_view);
         else
-            mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.tutorial1_activity_native_surface_view);
+            _mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.tutorial1_activity_native_surface_view);
 
-        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+        _mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
 
-        mOpenCvCameraView.setCvCameraViewListener(this);
+        _mOpenCvCameraView.setCvCameraViewListener(this);
         
         //t = mOpenCvCameraView.getWidth();
         //Log.i(TAG, "width " + mOpenCvCameraView.getWidth());
@@ -166,31 +151,31 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     public void onPause()
     {
         super.onPause();
-        if (mOpenCvCameraView != null)
-            mOpenCvCameraView.disableView();
+        if (_mOpenCvCameraView != null)
+            _mOpenCvCameraView.disableView();
     }
 
     @Override
     public void onResume()
     {
         super.onResume();
-        mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+        _mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
     }
 
     public void onDestroy() {
         super.onDestroy();
-        if (mOpenCvCameraView != null)
-            mOpenCvCameraView.disableView();
+        if (_mOpenCvCameraView != null)
+            _mOpenCvCameraView.disableView();
     }
 
     public void onCameraViewStarted(int width, int height) {
-    	mIntermediateMat = new Mat();
+    	_mIntermediateMat = new Mat();
     }
 
     public void onCameraViewStopped() {
-        if(mIntermediateMat != null)
-            mIntermediateMat.release();
-        mIntermediateMat = null;
+        if(_mIntermediateMat != null)
+            _mIntermediateMat.release();
+        _mIntermediateMat = null;
     }
 
     /**
@@ -204,44 +189,42 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	Mat rgba = inputFrame.rgba();
     	double frameWidth = rgba.width();
     	double frameHeight = rgba.height();
-    	double ratioWidth = rgba.width() / this.fastWidth;
-	    double ratioHeight = rgba.height() / this.fastHeight;
+    	double ratioWidth = rgba.width() / MAT_FAST_WIDTH;
+	    double ratioHeight = rgba.height() / MAT_FAST_HEIGHT;
     	double patternSizeRgba = frameHeight * 0.9;
-    	double patternSize = this.fastHeight * 0.9;
+    	double patternSize = MAT_FAST_HEIGHT * 0.9;
     	
     	// resize original image smaller, to perform transformations faster
     	Mat rgbaGrid = rgba.clone();
-    	ImageManager.resize(rgbaGrid, rgbaGrid, this.fastWidth, this.fastHeight);
+    	ImageManager.resize(rgbaGrid, rgbaGrid, MAT_FAST_WIDTH, MAT_FAST_HEIGHT);
     	Imgproc.cvtColor(rgbaGrid, rgbaGrid, Imgproc.COLOR_RGB2GRAY);
+    	
     	//Mat rgbaOCR = rgbaGrid.clone();
-	    //ImageManager.fastThreshold(rgbaGrid, rgbaGrid);
 	    ImageManager.fastThreshold(rgbaGrid, rgbaGrid);
     	
     	Point[] gridPoints = ImageManager.findGrid(rgbaGrid, patternSize);
     	if(gridPoints != null) {
     		Log.i("ETAT", "GRILLE TROUVE");
-    		/*ImageManager.line(rgba, gridPoints[0], gridPoints[1], 1, 1, new Scalar(255,0,0,255));
-            ImageManager.line(rgba, gridPoints[1], gridPoints[2], 1, 1, new Scalar(255,0,0,255));
-            ImageManager.line(rgba, gridPoints[2], gridPoints[3], 1, 1, new Scalar(255,0,0,255));
-            ImageManager.line(rgba, gridPoints[3], gridPoints[0], 1, 1, new Scalar(255,0,0,255));*/
     		
-    		ImageManager.line(rgba, new Point(gridPoints[0].x*ratioWidth,gridPoints[0].y*ratioHeight), new Point(gridPoints[1].x*ratioWidth,gridPoints[1].y*ratioHeight), 1, 1, new Scalar(255,0,0,255));
-    		ImageManager.line(rgba, new Point(gridPoints[1].x*ratioWidth,gridPoints[1].y*ratioHeight), new Point(gridPoints[2].x*ratioWidth,gridPoints[2].y*ratioHeight), 1, 1, new Scalar(255,0,0,255));
-    		ImageManager.line(rgba, new Point(gridPoints[2].x*ratioWidth,gridPoints[2].y*ratioHeight), new Point(gridPoints[3].x*ratioWidth,gridPoints[3].y*ratioHeight), 1, 1, new Scalar(255,0,0,255));
-    		ImageManager.line(rgba, new Point(gridPoints[3].x*ratioWidth,gridPoints[3].y*ratioHeight), new Point(gridPoints[0].x*ratioWidth,gridPoints[0].y*ratioHeight), 1, 1, new Scalar(255,0,0,255));
-            
-            Mat[][] matFigures = ImageManager.findFigures(rgbaGrid, gridPoints);
+    		// draw square found
+    		try {
+				ImageManager.drawLines(rgba, gridPoints, ratioWidth, ratioHeight, COLOR_SQUARE_FOUND);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+    		
+            /*Mat[][] matFigures = ImageManager.findFigures(rgbaGrid, gridPoints);
             String out = "";
             for(int i=0; i<9; i++) {
             	for(int j=0; j<9; j++) {
             		if(matFigures[j][i] != null) {
             			Point coordinates = new Point((frameWidth/2.0)-(patternSizeRgba/2)+(i*(patternSizeRgba/9))+10,
             					(frameHeight/2.0)-(patternSizeRgba/2)+(j*(patternSizeRgba/9))+35);
-            			/*ImageManager.pasteMat(matFigures[j][i], rgba, 
-            					new Point((frameWidth/2.0)-(patternSize/2)+(i*(patternSize/9)),
-            					(frameHeight/2.0)-(patternSize/2)+(j*(patternSize/9))));*/
+//            			ImageManager.pasteMat(matFigures[j][i], rgba, 
+//            					new Point((frameWidth/2.0)-(patternSize/2)+(i*(patternSize/9)),
+//            					(frameHeight/2.0)-(patternSize/2)+(j*(patternSize/9))));
 
-            			int currentFigure = Math.round(ocr.findByMat(matFigures[j][i]));
+            			int currentFigure = Math.round(_ocr.findByMat(matFigures[j][i]));
             			out += currentFigure + " ";
             			
             			if(currentFigure != 0) {
@@ -253,13 +236,15 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                 }
             	out += "\n";
             }
-            Log.i("GRILLE", out);
+            Log.i("GRILLE", out);*/
     	}
     	else {
     		Log.i("ETAT", "GRILLE NON TROUVE");
     	}
     	//ImageManager.resize(rgbaGrid, rgba, rgba.width(), rgba.height());
-    	ImageManager.drawSquare(rgba, new Point((frameWidth/2.0)-(patternSizeRgba/2),(frameHeight/2.0)-(patternSizeRgba/2)), patternSizeRgba, new Scalar(127,127,127));
+    	
+    	// draw square pattern
+    	ImageManager.drawSquare(rgba, new Point((frameWidth/2.0)-(patternSizeRgba/2),(frameHeight/2.0)-(patternSizeRgba/2)), patternSizeRgba, COLOR_SQUARE_PATTERN);
 
         return rgba;
     }
@@ -360,8 +345,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	boolean change = false;
     	for(int i=0; i<9; i++) {
     		for(int j=0; j<9; j++) {
-    			if(grille[j][i] != tampon[itamponMax][j][i]) {
-    				grille[j][i] = tampon[itamponMax][j][i];
+    			if(_grille[j][i] != _tampon[_itamponMax][j][i]) {
+    				_grille[j][i] = _tampon[_itamponMax][j][i];
     				change = true;
     			}
     		}
@@ -372,17 +357,17 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private void remplirTampon(int[][] s) {
     	for(int i=0; i<9; i++) {
     		for(int j=0; j<9; j++) {
-    			tampon[itampon][j][i] = s[j][i];
-    			tamponOccur[itampon] = 0;
+    			_tampon[_itampon][j][i] = s[j][i];
+    			_tamponOccur[_itampon] = 0;
     			for(int k=0; k<8; k++) {
-    				if(s[j][i] == tampon[k][j][i]) tamponOccur[itampon]++;
+    				if(s[j][i] == _tampon[k][j][i]) _tamponOccur[_itampon]++;
     			}
     		}
     	}
-    	itamponMax = 0;
+    	_itamponMax = 0;
 		for(int k=1; k<8; k++) {
-			if(tamponOccur[k] > tamponOccur[itamponMax]) itamponMax = k;
+			if(_tamponOccur[k] > _tamponOccur[_itamponMax]) _itamponMax = k;
 		}
-    	itampon = (itampon+1)%8;
+    	_itampon = (_itampon+1)%8;
     }
 }
