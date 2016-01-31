@@ -32,4 +32,34 @@ public class Grid {
 	public int get(int i, int j) {
 		return table[i][j];
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+	    if (obj == null) {
+	        return false;
+	    }
+	    if (getClass() != obj.getClass()) {
+	        return false;
+	    }
+	    final Grid other = (Grid) obj;
+	    if (this.size != other.size) {
+	        return false;
+	    }
+        for(int i=0; i<size; i++) {
+            for(int j=0; j<size; j++) {
+            	if(table[i][j] != other.table[i][j]) {
+            		return false;
+            	}
+            }
+        }
+	    return true;
+	}
+
+	@Override
+	public int hashCode() {
+	    int hash = 3;
+	    hash = 42 * hash + (this.table != null ? this.table.hashCode() : 0);
+	    hash = 42 * hash + this.size;
+	    return hash;
+	}
 }
