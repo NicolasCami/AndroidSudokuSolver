@@ -21,6 +21,8 @@ import org.opencv.imgproc.Imgproc;
 import fr.nicolascami.task.FindFiguresTask;
 import fr.nicolascami.task.FindSquareTask;
 import fr.nicolascami.task.OCRTask;
+import fr.nicolascami.util.Grid;
+import fr.nicolascami.util.GridBuffer;
 import fr.nicolascami.util.ImageManager;
 import fr.nicolascami.util.OCR;
 import fr.nicolascami.util.Solver;
@@ -45,11 +47,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 	private OCR 			_ocr;
 	private Button 			button;
 	private boolean 		analyser = false;
-	private int 			_tampon[][][];
-	private int 			_tamponOccur[];
-	private int 			_itampon;
-	private int 			_itamponMax;
-	private int 			_grille[][];
 	private long 			_lastSolve = System.currentTimeMillis();
 	private Solver 			_solver;
 	private Point[] 		_lastSquareFound = null;
@@ -63,7 +60,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 	private double			_patternSizeRgba = 0.0;
 	private double 			_frameWidth = 0.0;
 	private double 			_frameHeight = 0.0;
-	
+	private GridBuffer		_gridBuffer;
     
     private CameraBridgeViewBase 	_mOpenCvCameraView;
     private boolean              	_mIsJavaCamera = true;
@@ -108,30 +105,10 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
         _ocr = new OCR(getApplicationContext());
-        //Log.i(TAG, ocr.findByRessource(R.drawable.training2_2).toString());
-        //Log.i(TAG, ocr.findByRessource(R.drawable.training5_0).toString());
-        //Log.i(TAG, ocr.findByRessource(R.drawable.training6_1).toString());
-
-        _tampon = new int[8][9][9];
-        _tamponOccur = new int[8];
-        _itampon = 0;
-        _itamponMax = 0;
-        for(int k=0; k<8; k++) {
-	    	for(int i=0; i<9; i++) {
-	    		for(int j=0; j<9; j++) {
-	    			_tampon[k][j][i] = 0;
-	    		}
-	    	}
-	    	_tamponOccur[k] = 0;
-        }
-        _grille = new int[9][9];
-    	for(int i=0; i<9; i++) {
-    		for(int j=0; j<9; j++) {
-    			_grille[j][i] = 0;
-    		}
-    	}
-    	_solver = new Solver(3);
-    	_solver.solve(_grille,true);
+        _gridBuffer = new GridBuffer(10);
+        
+    	//_solver = new Solver(3);
+    	//_solver.solve(_grille,true);
         setContentView(R.layout.tutorial1_surface_view);
 		button = (Button) findViewById(R.id.button1);
 		button.setOnClickListener(new OnClickListener() {
@@ -240,12 +217,14 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	ImageManager.drawSquare(rgba, new Point((_frameWidth/2.0)-(_patternSizeRgba/2),(_frameHeight/2.0)-(_patternSizeRgba/2)), _patternSizeRgba, COLOR_SQUARE_PATTERN);
     	
     	// draw grid
+    	Grid grid = _gridBuffer.getReliableGrid();
         for(int i=0; i<9; i++) {
         	for(int j=0; j<9; j++) {
-        		if(_grille[i][j] != 0) {
+        		int value = grid.get(i, j);
+        		if(value != 0) {
         			Point coordinates = new Point((_frameWidth/2.0)-(_patternSizeRgba/2)+(i*(_patternSizeRgba/9))+10,
 					(_frameHeight/2.0)-(_patternSizeRgba/2)+(j*(_patternSizeRgba/9))+35);
-        			Core.putText(rgba, Integer.toString(_grille[i][j]), coordinates, Core.FONT_HERSHEY_PLAIN, 3, new Scalar(0,0,255,255), 3);
+        			Core.putText(rgba, Integer.toString(value), coordinates, Core.FONT_HERSHEY_PLAIN, 3, new Scalar(0,0,255,255), 3);
         		}
             }
         }
@@ -253,55 +232,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	_previousFrameNumber = _currentFrameNumber;
 
         return rgba;
-    }
-    
-    private int[][] buildTable(List<Rect> rects, List<Integer> values, Size size) {
-    	int table[][] = new int[9][9];
-    	int lenCase = (int)size.width/9;
-    	
-    	for(int i=0; i<9; i++) {
-    		for(int j=0; j<9; j++) {
-    			table[j][i] = 0;
-    		}
-    	}
-		for(int k=0; k<rects.size(); k++) {
-			int mx = (rects.get(k).x+rects.get(k).width)-(rects.get(k).width/2);
-			int my = (rects.get(k).y+rects.get(k).height)-(rects.get(k).height/2);
-			int x = mx/lenCase;
-			int y = my/lenCase;
-			table[y][x] = values.get(k);
-		}
-    	return table;
-    }
-    
-    private boolean changerGrille() {
-    	boolean change = false;
-    	for(int i=0; i<9; i++) {
-    		for(int j=0; j<9; j++) {
-    			if(_grille[j][i] != _tampon[_itamponMax][j][i]) {
-    				_grille[j][i] = _tampon[_itamponMax][j][i];
-    				change = true;
-    			}
-    		}
-    	}
-    	return change;
-    }
-    
-    private void remplirTampon(int[][] s) {
-    	for(int i=0; i<9; i++) {
-    		for(int j=0; j<9; j++) {
-    			_tampon[_itampon][j][i] = s[j][i];
-    			_tamponOccur[_itampon] = 0;
-    			for(int k=0; k<8; k++) {
-    				if(s[j][i] == _tampon[k][j][i]) _tamponOccur[_itampon]++;
-    			}
-    		}
-    	}
-    	_itamponMax = 0;
-		for(int k=1; k<8; k++) {
-			if(_tamponOccur[k] > _tamponOccur[_itamponMax]) _itamponMax = k;
-		}
-    	_itampon = (_itampon+1)%8;
     }
 
     private void findGridStart(Mat image, double squareSize) {
@@ -342,7 +272,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 	}
 
 	public void OCRResult(int[][] result) {
-        remplirTampon(result);
-        changerGrille();
+        _gridBuffer.fillBuffer(result);
 	}
 }
