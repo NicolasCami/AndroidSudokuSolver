@@ -20,6 +20,7 @@ import org.opencv.imgproc.Imgproc;
 
 import fr.nicolascami.task.FindFiguresTask;
 import fr.nicolascami.task.FindSquareTask;
+import fr.nicolascami.task.OCRTask;
 import fr.nicolascami.util.ImageManager;
 import fr.nicolascami.util.OCR;
 import fr.nicolascami.util.Solver;
@@ -332,35 +333,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
 	public void findFiguresResult(Mat[][] result) {
 		Log.i(TAG, "Figures search result. It tooks " + (_currentFrameNumber - _lastFiguresFoundFrameNumber) + " frames.");
-
-		int[][] grid = new int[9][9];
-        String out = "";
-        for(int i=0; i<9; i++) {
-        	for(int j=0; j<9; j++) {
-        		if(result[j][i] != null) {
-//        			Point coordinates = new Point((_frameWidth/2.0)-(_patternSizeRgba/2)+(i*(_patternSizeRgba/9))+10,
-//        					(_frameHeight/2.0)-(_patternSizeRgba/2)+(j*(_patternSizeRgba/9))+35);
-//        			ImageManager.pasteMat(matFigures[j][i], rgba, 
-//        					new Point((frameWidth/2.0)-(patternSize/2)+(i*(patternSize/9)),
-//        					(frameHeight/2.0)-(patternSize/2)+(j*(patternSize/9))));
-
-        			int currentFigure = Math.round(_ocr.findByMat(result[j][i]));
-        			out += currentFigure + " ";
-        			grid[i][j] = currentFigure;
-        			
-        			/*if(currentFigure != 0) {
-        				Core.putText(rgba, Integer.toString(currentFigure), coordinates, Core.FONT_HERSHEY_PLAIN, 3, new Scalar(0,0,255,255), 3);
-        			}*/
-        		}
-        		else
-        			out += "0 ";
-            }
-        	out += "\n";
-        }
-        Log.i("GRILLE", out);
-        remplirTampon(grid);
-        changerGrille();
-        
+		OCRStart(result);
 		_processingFindFigures = false;
+	}
+	
+	private void OCRStart(Mat[][] figures) {
+    	new OCRTask(this, _ocr).execute((Object) figures);
+	}
+
+	public void OCRResult(int[][] result) {
+        remplirTampon(result);
+        changerGrille();
 	}
 }

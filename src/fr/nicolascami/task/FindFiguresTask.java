@@ -21,7 +21,7 @@ public class FindFiguresTask extends AsyncTask<Object, Void, Mat[][]> {
     }
 
     /**
-     * Return square points if found, or null otherwise.
+     * Return a matrix of images.
      * @param params
      * @return
      */

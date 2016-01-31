@@ -81,7 +81,7 @@ public class ImageManager {
 	
 	public static List<MatOfPoint2f> getSquares(Mat src, double minArea, double maxArea) {
 		long begin = System.currentTimeMillis();
-		Log.i("ImageManager", "min : " + minArea + " / max : " + maxArea);
+		//Log.i("ImageManager", "min : " + minArea + " / max : " + maxArea);
 		
         List<MatOfPoint> shapes = new ArrayList<MatOfPoint>();
         List<MatOfPoint2f> squares = new ArrayList<MatOfPoint2f>();
@@ -95,13 +95,13 @@ public class ImageManager {
     		Imgproc.approxPolyDP(pointsList, approxPoly, Imgproc.arcLength(pointsList, true)*0.02, true);
         	if(ImageManager.isSquare(approxPoly)) {
             	double area = ImageManager.squareArea(approxPoly);
-            	Log.i("ImageManager", "square area : " + area);
+            	//Log.i("ImageManager", "square area : " + area);
             	// ignore small or large areas
             	if(area < minArea || area > maxArea) {
             		continue;
             	}
                 squares.add(approxPoly);
-                Log.i("ImageManager", "square OK : " + area);
+                //Log.i("ImageManager", "square OK : " + area);
         	}
         }
         
