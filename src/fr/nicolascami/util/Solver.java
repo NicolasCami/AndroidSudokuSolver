@@ -1,8 +1,5 @@
 package fr.nicolascami.util;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -20,17 +17,6 @@ class ComparateurList implements Comparator<List<Integer>> {
 }
 
 public class Solver {
-	
-	// grid array buffer
-	Grid buffer[];
-	
-	// grid occurence in the buffer
-	int bufferOccur[];
-	
-	// current index 
-	int bufferIndex;
-	int bufferIndexMax;
-	int bufferSize = 8;
 	 
 	// Sudoku size K=square size, N=grid size (N=K*K)
 	static private int K, N;
@@ -50,15 +36,6 @@ public class Solver {
 	public Solver(int k) {
 		K = k;
 		N = k*k;
-		
-        buffer = new Grid[bufferSize];
-        bufferOccur = new int[bufferSize];
-        bufferIndex = 0;
-        bufferIndexMax = 0;
-        for(int i=0; i<bufferSize; i++) {
-        	buffer[i] = new Grid(k);
-        	bufferOccur[i] = 0;
-        }
 	}
 	
 	public int[][] getSolution() {

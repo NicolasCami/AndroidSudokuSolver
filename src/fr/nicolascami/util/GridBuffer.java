@@ -43,6 +43,7 @@ public class GridBuffer {
     		}
     	}
     	
+    	// TODO : improve speed, by decrease by 1 all grid equals to the older grid, and by compute only the new grid frequency (x8 faster)
     	// compute each grids frequency
 		for(int k=0; k<_bufferSize; k++) {
 			_gridFrenquecy[k] = 0;

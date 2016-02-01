@@ -21,6 +21,7 @@ import org.opencv.imgproc.Imgproc;
 import fr.nicolascami.task.FindFiguresTask;
 import fr.nicolascami.task.FindSquareTask;
 import fr.nicolascami.task.OCRTask;
+import fr.nicolascami.task.SolveTask;
 import fr.nicolascami.util.Grid;
 import fr.nicolascami.util.GridBuffer;
 import fr.nicolascami.util.ImageManager;
@@ -55,12 +56,14 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 	private long			_previousFrameNumber = 0;
 	private boolean			_processingFindSquare = false;
 	private boolean			_processingFindFigures = false;
+	private boolean			_processingSolve = false;
 	private long			_currentFrameNumber = 0;
 	private Mat				_lastImageForProcessing;
 	private double			_patternSizeRgba = 0.0;
 	private double 			_frameWidth = 0.0;
 	private double 			_frameHeight = 0.0;
 	private GridBuffer		_gridBuffer;
+	private Grid			_lastSolvedGrid = null;
     
     private CameraBridgeViewBase 	_mOpenCvCameraView;
     private boolean              	_mIsJavaCamera = true;
@@ -218,16 +221,30 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     	
     	// draw grid
     	Grid grid = _gridBuffer.getReliableGrid();
-        for(int i=0; i<9; i++) {
-        	for(int j=0; j<9; j++) {
-        		int value = grid.get(i, j);
-        		if(value != 0) {
-        			Point coordinates = new Point((_frameWidth/2.0)-(_patternSizeRgba/2)+(i*(_patternSizeRgba/9))+10,
-					(_frameHeight/2.0)-(_patternSizeRgba/2)+(j*(_patternSizeRgba/9))+35);
-        			Core.putText(rgba, Integer.toString(value), coordinates, Core.FONT_HERSHEY_PLAIN, 3, new Scalar(0,0,255,255), 3);
-        		}
+    	if(_lastSolvedGrid != null) {
+            for(int i=0; i<9; i++) {
+            	for(int j=0; j<9; j++) {
+            		int value = _lastSolvedGrid.get(i, j);
+            		if(value != 0) {
+            			Point coordinates = new Point((_frameWidth/2.0)-(_patternSizeRgba/2)+(i*(_patternSizeRgba/9))+10,
+    					(_frameHeight/2.0)-(_patternSizeRgba/2)+(j*(_patternSizeRgba/9))+35);
+            			Core.putText(rgba, Integer.toString(value), coordinates, Core.FONT_HERSHEY_PLAIN, 3, new Scalar(0,0,255,255), 3);
+            		}
+                }
             }
-        }
+    	}
+    	else {
+            for(int i=0; i<9; i++) {
+            	for(int j=0; j<9; j++) {
+            		int value = grid.get(i, j);
+            		if(value != 0) {
+            			Point coordinates = new Point((_frameWidth/2.0)-(_patternSizeRgba/2)+(i*(_patternSizeRgba/9))+10,
+    					(_frameHeight/2.0)-(_patternSizeRgba/2)+(j*(_patternSizeRgba/9))+35);
+            			Core.putText(rgba, Integer.toString(value), coordinates, Core.FONT_HERSHEY_PLAIN, 3, new Scalar(0,0,255,255), 3);
+            		}
+                }
+            }
+    	}
     	
     	_previousFrameNumber = _currentFrameNumber;
 
@@ -273,5 +290,19 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
 	public void OCRResult(int[][] result) {
         _gridBuffer.fillBuffer(result);
+        Grid grid = _gridBuffer.getReliableGrid();
+        if(grid != null && !_processingSolve) {
+        	SolveStart(grid);
+        }
+	}
+	
+	private void SolveStart(Grid grid) {
+    	new SolveTask(this).execute((Object) grid);
+    	_processingSolve = true;
+	}
+
+	public void SolveResult(Grid result) {
+		_lastSolvedGrid = result;
+		_processingSolve = false;
 	}
 }
